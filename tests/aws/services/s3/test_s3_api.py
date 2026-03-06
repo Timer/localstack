@@ -3494,9 +3494,6 @@ class TestS3MetricsConfiguration:
         snapshot.match("delete_bucket_metrics_configuration_2", delete_err.value.response)
 
 
-@pytest.mark.skip(
-    reason="Behavior is not in line anymore with AWS: implement IfMatch in DeleteObject"
-)
 class TestS3DeletePrecondition:
     @markers.aws.validated
     def test_delete_object_if_match_non_express(self, s3_bucket, aws_client, snapshot):
@@ -3506,6 +3503,123 @@ class TestS3DeletePrecondition:
         with pytest.raises(ClientError) as e:
             aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch="badvalue")
         snapshot.match("delete-obj-if-match", e.value.response)
+
+    @markers.aws.validated
+    def test_delete_object_if_match(self, s3_bucket, aws_client, snapshot):
+        """DeleteObject with If-Match on an unversioned bucket."""
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test content")
+        etag = put_obj["ETag"]
+
+        # wrong ETag: 412 PreconditionFailed
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch='"wrong-etag"')
+        snapshot.match("delete-obj-if-match-wrong-etag", e.value.response)
+
+        # correct ETag: succeeds (quoted and unquoted both work)
+        delete_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch=etag)
+        snapshot.match("delete-obj-if-match", delete_obj)
+
+        # object no longer exists: 404 NoSuchKey (not 412)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch=etag)
+        snapshot.match("delete-obj-if-match-no-object", e.value.response)
+
+    @markers.aws.validated
+    def test_delete_object_if_match_star(self, s3_bucket, aws_client, snapshot):
+        """If-Match: * succeeds when the object exists and fails with NoSuchKey when it does not.
+
+        Unlike PutObject and CopyObject, DeleteObject accepts '*' as the If-Match value.
+        """
+        key = "test-precondition"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test content")
+
+        # object exists: delete succeeds
+        delete_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch="*")
+        snapshot.match("delete-obj-if-match-star", delete_obj)
+
+        # object no longer exists: 404 NoSuchKey (not 412)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch="*")
+        snapshot.match("delete-obj-if-match-star-no-object", e.value.response)
+
+    @markers.aws.validated
+    def test_delete_object_if_match_versioned_bucket(self, s3_bucket, aws_client, snapshot):
+        """DeleteObject with If-Match on a versioned bucket.
+
+        If-Match evaluates against the current object version's ETag. A matching
+        delete creates a delete marker. If the current version is a delete marker
+        or the key does not exist, AWS returns 404 NoSuchKey.
+        """
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test content")
+        snapshot.match("put-obj", put_obj)
+        etag = put_obj["ETag"]
+
+        # wrong ETag: 412 PreconditionFailed
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch='"wrong-etag"')
+        snapshot.match("delete-obj-if-match-wrong-etag", e.value.response)
+
+        # correct ETag: succeeds, creates a delete marker
+        delete_obj = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch=etag)
+        snapshot.match("delete-obj-if-match", delete_obj)
+
+        # current version is now a delete marker: 404 NoSuchKey
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch=etag)
+        snapshot.match("delete-obj-if-match-delete-marker", e.value.response)
+
+        # If-Match: * on delete marker: also 404 NoSuchKey
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch="*")
+        snapshot.match("delete-obj-if-match-star-delete-marker", e.value.response)
+
+        # put a new version and verify If-Match checks the new current version
+        put_obj_2 = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="new content")
+        snapshot.match("put-obj-2", put_obj_2)
+        etag_2 = put_obj_2["ETag"]
+
+        # old ETag no longer matches: 412 PreconditionFailed
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch=etag)
+        snapshot.match("delete-obj-if-match-old-etag", e.value.response)
+
+        # new ETag matches
+        delete_obj_2 = aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch=etag_2)
+        snapshot.match("delete-obj-if-match-2", delete_obj_2)
+
+    @markers.aws.validated
+    def test_delete_object_if_match_with_version_id(self, s3_bucket, aws_client, snapshot):
+        """AWS rejects If-Match combined with VersionId: 501 NotImplemented."""
+        snapshot.add_transformer(snapshot.transform.s3_api())
+        aws_client.s3.put_bucket_versioning(
+            Bucket=s3_bucket, VersioningConfiguration={"Status": "Enabled"}
+        )
+
+        key = "test-precondition"
+        put_obj = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test content")
+        version_id = put_obj["VersionId"]
+        etag = put_obj["ETag"]
+
+        # VersionId + If-Match: <etag> is rejected even when both would match
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(
+                Bucket=s3_bucket, Key=key, VersionId=version_id, IfMatch=etag
+            )
+        snapshot.match("delete-obj-version-id-if-match", e.value.response)
+
+        # VersionId + If-Match: * is also rejected
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(
+                Bucket=s3_bucket, Key=key, VersionId=version_id, IfMatch="*"
+            )
+        snapshot.match("delete-obj-version-id-if-match-star", e.value.response)
 
     @markers.aws.validated
     def test_delete_object_if_match_modified_non_express(self, s3_bucket, aws_client, snapshot):

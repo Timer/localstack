@@ -287,6 +287,15 @@
       "total": 2.23
     }
   },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match": {
+    "last_validated_date": "2026-03-06T19:24:27+00:00",
+    "durations_in_seconds": {
+      "setup": 1.21,
+      "call": 0.27,
+      "teardown": 0.35,
+      "total": 1.83
+    }
+  },
   "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_all_non_express": {
     "last_validated_date": "2026-02-21T01:05:57+00:00",
     "durations_in_seconds": {
@@ -321,6 +330,33 @@
       "call": 0.24,
       "teardown": 1.24,
       "total": 2.01
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_star": {
+    "last_validated_date": "2026-03-06T19:24:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 0.19,
+      "teardown": 0.34,
+      "total": 0.9
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_versioned_bucket": {
+    "last_validated_date": "2026-03-06T19:24:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.35,
+      "call": 0.79,
+      "teardown": 0.59,
+      "total": 1.73
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_with_version_id": {
+    "last_validated_date": "2026-03-06T19:24:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.36,
+      "call": 0.53,
+      "teardown": 0.75,
+      "total": 1.64
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_delete_metrics_configuration": {

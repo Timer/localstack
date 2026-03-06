@@ -1271,23 +1271,42 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentName="x-amz-bypass-governance-retention",
             )
 
-        # TODO: this is only supported for Directory Buckets
+        # x-amz-if-match-size and x-amz-if-match-last-modified-time are only supported for Directory Buckets
         non_supported_precondition = None
-        if if_match:
-            non_supported_precondition = "If-Match"
         if if_match_size:
             non_supported_precondition = "x-amz-if-match-size"
         if if_match_last_modified_time:
             non_supported_precondition = "x-amz-if-match-last-modified-time"
         if non_supported_precondition:
             LOG.warning(
-                "DeleteObject Preconditions is only supported for Directory Buckets. "
-                "LocalStack does not support Directory Buckets yet."
+                "%s is only supported for Directory Buckets. "
+                "LocalStack does not support Directory Buckets yet.",
+                non_supported_precondition,
             )
             raise NotImplementedException(
                 "A header you provided implies functionality that is not implemented",
                 Header=non_supported_precondition,
             )
+
+        if if_match:
+            if version_id:
+                raise NotImplementedException(
+                    "A header you provided implies functionality that is not implemented",
+                    Header="If-Match",
+                    additionalMessage="Conditional delete operations are not allowed when a "
+                    "version ID is included in the request parameters.",
+                )
+            # TODO: add locking around the precondition check to prevent races with
+            #  concurrent PutObject/CopyObject. Deferred per maintainer guidance on #13330 —
+            #  proper concurrency support requires coordinated changes across PutObject,
+            #  CopyObject, DeleteObject and DeleteObjects together.
+            if if_match == "*":
+                # If-Match: * means "delete only if the object exists". Unlike PutObject
+                # and CopyObject, DeleteObject accepts this value.
+                if not object_exists_for_precondition_write(s3_bucket, key):
+                    raise NoSuchKey("The specified key does not exist.", Key=key)
+            else:
+                verify_object_equality_precondition_write(s3_bucket, key, if_match)
 
         if s3_bucket.versioning_status is None:
             if version_id and version_id != "null":

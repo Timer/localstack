@@ -5878,5 +5878,176 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match": {
+    "recorded-date": "06-03-2026, 19:23:23",
+    "recorded-content": {
+      "delete-obj-if-match-wrong-etag": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "delete-obj-if-match": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-obj-if-match-no-object": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "test-precondition",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_star": {
+    "recorded-date": "06-03-2026, 19:23:24",
+    "recorded-content": {
+      "delete-obj-if-match-star": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-obj-if-match-star-no-object": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "test-precondition",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_versioned_bucket": {
+    "recorded-date": "06-03-2026, 19:23:26",
+    "recorded-content": {
+      "put-obj": {
+        "ChecksumCRC32": "V/RnXQ==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"9473fdd0d880a43c21b7778d34872157\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-obj-if-match-wrong-etag": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "delete-obj-if-match": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-obj-if-match-delete-marker": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "test-precondition",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "delete-obj-if-match-star-delete-marker": {
+        "Error": {
+          "Code": "NoSuchKey",
+          "Key": "test-precondition",
+          "Message": "The specified key does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "put-obj-2": {
+        "ChecksumCRC32": "UPbgew==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"96c15c2bb2921193bf290df8cd85e2ba\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-obj-if-match-old-etag": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      },
+      "delete-obj-if-match-2": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_with_version_id": {
+    "recorded-date": "06-03-2026, 19:23:29",
+    "recorded-content": {
+      "delete-obj-version-id-if-match": {
+        "Error": {
+          "Code": "NotImplemented",
+          "Header": "If-Match",
+          "Message": "A header you provided implies functionality that is not implemented",
+          "additionalMessage": "Conditional delete operations are not allowed when a version ID is included in the request parameters."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 501
+        }
+      },
+      "delete-obj-version-id-if-match-star": {
+        "Error": {
+          "Code": "NotImplemented",
+          "Header": "If-Match",
+          "Message": "A header you provided implies functionality that is not implemented",
+          "additionalMessage": "Conditional delete operations are not allowed when a version ID is included in the request parameters."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 501
+        }
+      }
+    }
   }
 }
